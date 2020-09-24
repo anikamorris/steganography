@@ -9,6 +9,7 @@ def decode_image(path_to_png):
     in black and white based on the least significant bit of each
     pixel in the original image (if LSB is 0, new image's 
     corresponding pixel will be black, otherwise it will be white).
+    Saves resulting image to filesystem.
     """
     # Open the image using PIL:
     encoded_image = Image.open(path_to_png)
@@ -37,49 +38,58 @@ def decode_image(path_to_png):
                 decoded_image.putpixel((x,y), (255,255,255))
     
     # DO NOT MODIFY. Save the decoded image to disk:
-    decoded_image.save("decoded_hills_image.png")
+    decoded_image.save("decoded_image.png")
 
 
-def encode_image(path_to_png):
+def encode_image(path_to_png, text_to_write):
     """
-    TODO: Add docstring and complete implementation.
+    Input: path_to_png: String, text_to_write: String
+    Output: None
+    Encodes a secret message in the red channel of a copy of the inputted 
+    image and saves to filesystem.
     """
     # Open the image using PIL:
     base_image = Image.open(path_to_png)
     # Create a new image to write to
-    encoded_image = Image.new("RGB", base_image.size)
+    new_image = Image.new("RGB", base_image.size)
 
     # Separate the red channel from the rest of the image:
-    base_red_channel = base_image.split()[0]
-    green_channel = base_image.split()[1]
-    blue_channel = base_image.split()[2]
+    base_red_channel = base_image.getchannel(0)
+    green_channel = base_image.getchannel(1)
+    blue_channel = base_image.getchannel(2)
 
-    # Create a new PIL image with the same size as the encoded image:
-    pixels = base_image.load()
+    # create image from text with same size as base image
     x_size, y_size = base_image.size
-
-    secret_img = write_text("hello", (x_size, y_size))
-    text_red_channel = Image.open("text_image.png").split()[0]
+    secret_img = write_text(text_to_write, (x_size, y_size))
 
     # loop through x_size, y_size
     for x in range(x_size):
         for y in range(y_size):
+            # get all channel values for pixel at (x, y)
             red_pixel = base_red_channel.getpixel((x,y))
             green_pixel = green_channel.getpixel((x,y))
             blue_pixel = blue_channel.getpixel((x,y))
-            encoded_image.putpixel((x,y), (red_pixel, green_pixel, blue_pixel))
+            # set new image's pixel value at (x, y) to be the same as base
+            new_image.putpixel((x,y), (red_pixel, green_pixel, blue_pixel))
+            # if red channel pixel is odd
             if red_pixel % 2 == 1:
+                # make it even
                 red_pixel -= 1
-                encoded_image.putpixel((x,y), (red_pixel, green_pixel, blue_pixel))
-            new_image = ImageChops.add(encoded_image, secret_img)
+                # reset new images's x,y pixel to new value
+                new_image.putpixel((x,y), (red_pixel, green_pixel, blue_pixel))
+    
+     # add our new image and secret image together
+    encoded_image = ImageChops.add(new_image, secret_img)
             
-    new_image.save("encoded_image.png")
+    encoded_image.save("encoded_house_image.png")
             
 
 
 def write_text(text_to_write, image_size):
     """
-    TODO: Add docstring and complete implementation.
+    Input: text_to_write: String, image_size: Tuple
+    Output: Image
+    Takes a string and creates an image with that string included in the red channel
     """
     # create an image
     out = Image.new("RGB", image_size, (1,0,0))
@@ -95,5 +105,5 @@ def write_text(text_to_write, image_size):
 
 
 if __name__ == "__main__":
-    encode_image("hills.png")
-    decode_image("encoded_image.png")
+    encode_image("house.png", "known some call is air am")
+    decode_image("encoded_house_image.png")
